@@ -81,6 +81,7 @@ function createRequest(url){
 	return xhr
 }
 
+
 function getCurrentStats(url, pubKey) {
 	// Gets basic validator account stats. 
 
