@@ -22,8 +22,7 @@ $w.onReady(function () {
 
 
 function getOnePrice(url) {
-/* Grabs One price from Binance.com. 
-*/
+/* Grabs One price from Binance.com. */
 	
 	var socket = new WebSocket(url);
 
@@ -37,7 +36,7 @@ function getOnePrice(url) {
 
 
 function updateOpenPrice(price){
-	// Updates elements on page with price information. 
+/* Updates elements on page with price information. */
 	
 	if (price != undefined){
 		price = new Number(price);
@@ -50,7 +49,7 @@ function updateOpenPrice(price){
 
 
 function setParams(pubKey, method) {
-	// Sets params for basic Harmony API call.
+/* Sets params for basic Harmony API call. */
 	
 	// Sends empty brackets for params if no address required.
 	if (pubKey != null){
@@ -69,7 +68,7 @@ function setParams(pubKey, method) {
 
 
 function createRequest(url){
-	// Creates basic XMLHttpRequest for Harmony API. 
+/* Creates basic XMLHttpRequest for Harmony API. */
 	
 	let xhr = new XMLHttpRequest();
 	
@@ -83,7 +82,7 @@ function createRequest(url){
 
 
 function getCurrentStats(url, pubKey) {
-	// Gets basic validator account stats. 
+/* Gets basic validator account stats. */
 
 	let data = setParams(pubKey, "hmy_getValidatorInformation");
 	let xhr = createRequest(url);
@@ -99,7 +98,7 @@ function getCurrentStats(url, pubKey) {
 
 
 function getBlockStats(url, pubKey) {
-	// Gets block stats.
+/* Gets block stats. */
 
 	let data = setParams(pubKey, "hmyv2_blockNumber");
 	let xhr = createRequest(url);
@@ -115,7 +114,7 @@ function getBlockStats(url, pubKey) {
 
 
 function updateStats(json){
-	// Updates Validator Specific stats. 
+/* Updates Validator Specific stats. */
 
 	const stakingGoal = 10000000
 	let totalStaked = Number(json.result["total-delegation"]) / 1e18
@@ -131,7 +130,7 @@ function updateStats(json){
 
 
 function updateBlockStats(json){
-	// Updates block specific stats. 
+/* Updates block specific stats. */
 	
 	let currentBlock = json.result;
 	
