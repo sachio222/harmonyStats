@@ -113,6 +113,24 @@ function getBlockStats(url, pubKey) {
 }
 
 
+function getEpochStats(json){
+/* Gets block of last epoch, used in calculating epoch time. */
+	
+	let data = setParams(pubKey, "hmyv2_getStakingNetworkInfo");
+	
+	let xhr = createRequest(url);
+
+	xhr.send(data);
+	xhr.onreadystatechange = function () {
+   		if (xhr.readyState === 4) {
+			let json = xhr.response;
+			updateEpochStats(json);
+   		}
+	};
+
+}
+
+
 function updateStats(json){
 /* Updates Validator Specific stats. */
 
@@ -136,4 +154,12 @@ function updateBlockStats(json){
 	
 	// Wix specific update to elements.
 	$w("#currentBlock").text = currentBlock.toString();
+}
+
+
+function updateEpochStats(json){
+/* Updates Epoch Stats. */
+	
+	let prevEpochLastBlock = json["epoch-last-block"];
+	console.log(prevEpochLastBlock);
 }
