@@ -129,6 +129,7 @@ function updateStats(json){
 
 }
 
+
 function updateBlockStats(json){
 	// Updates block specific stats. 
 	
