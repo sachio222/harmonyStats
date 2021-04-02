@@ -1,3 +1,5 @@
+/* Free to use with credit given to thediamondhawk at https://www.888stake.one */
+
 // Binance target for One price. kline_1m, _10m, _30m <-- choose intervals.
 // Full list of intervals in binance API docs. 
 const tickerPriceUrl = 'wss://stream.binance.com:9443/ws/oneusdt@kline_1m';
@@ -8,6 +10,8 @@ const harmonyApiUrl = "https://api.harmony.one";
 // Replace this with your wallet address (public key). 
 const pubKey = "one1xa843twfjzkkk8ekj79t7n2ynah6djl0e3ty4x";
 
+let lastBlockGlobal, thisBlockGlobal;
+
 
 $w.onReady(function () {
 	// Wix style onReady function.
@@ -15,6 +19,7 @@ $w.onReady(function () {
 	getOnePrice(tickerPriceUrl);
 	getCurrentStats(harmonyApiUrl, pubKey);
 	getBlockStats(harmonyApiUrl, null);
+	getEpochStats(harmonyApiUrl, null);
 
 	// To select an element by ID use: $w("#elementID")
 
@@ -107,13 +112,13 @@ function getBlockStats(url, pubKey) {
 	xhr.onreadystatechange = function () {
    		if (xhr.readyState === 4) {
 			let json = xhr.response;
-			updateBlockStats(json);
+			thisBlockGlobal = updateBlockStats(json);
    		}
 	};
 }
 
 
-function getEpochStats(json){
+function getEpochStats(url, pubKey){
 /* Gets block of last epoch, used in calculating epoch time. */
 	
 	let data = setParams(pubKey, "hmyv2_getStakingNetworkInfo");
@@ -154,12 +159,32 @@ function updateBlockStats(json){
 	
 	// Wix specific update to elements.
 	$w("#currentBlock").text = currentBlock.toString();
+
+	return currentBlock;
 }
 
 
 function updateEpochStats(json){
 /* Updates Epoch Stats. */
+
+	let epochLastBlock = json.result["epoch-last-block"]
 	
-	let prevEpochLastBlock = json["epoch-last-block"];
-	console.log(prevEpochLastBlock);
+	let time = calculateNextEpochTime(thisBlockGlobal, epochLastBlock);
+
+	$w("#nextEpoch").text = "approx. " + time.toString();
+}
+
+
+function calculateNextEpochTime(currentBlock, epochLastBlock) {
+	const processingSeconds = 2;
+	
+	let blockDelta = epochLastBlock - currentBlock;
+	let totalSeconds = blockDelta * processingSeconds;
+	let hours = totalSeconds / 3600
+	let minutes = totalSeconds % 3600 / 60
+	console.log(totalSeconds)
+
+	let time = Math.floor(hours) + " hours " + Math.floor(minutes) + " minutes"
+
+	return time;
 }
