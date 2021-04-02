@@ -1,6 +1,3 @@
-// WIX Specific JSON resource from the network using HTTPS.
-import {fetch} from 'wix-fetch';
-
 // Binance target for One price. kline_1m, _10m, _30m <-- choose intervals.
 // Full list of intervals in binance API docs. 
 const tickerPriceUrl = 'wss://stream.binance.com:9443/ws/oneusdt@kline_1m';
