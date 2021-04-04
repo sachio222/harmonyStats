@@ -19,17 +19,6 @@ $w.onReady(function () {
 })
 
 
-const updateHarmonyStats = async () => {
-	let data = await gatherHarmonyData(HARMONY_API_URL, PUB_KEY);
-	refreshDataOnScreen(data);
-}
-
-const refreshDataOnScreen = (data) => {
-	refreshStakingStats(data.stakingJson);
-	refreshBlockStats(data.blockJson);
-	refreshEpochStats(data.epochJson);
-}
-
 /* Binance Ticker Data */
 const getBinanceTicker = async (url) => {
 	let socket = new WebSocket(url);
@@ -62,6 +51,12 @@ let refreshOpenPrice = (price) => {
 
 
 /* Harmony Data */
+const updateHarmonyStats = async () => {
+	let data = await gatherHarmonyData(HARMONY_API_URL, PUB_KEY);
+	refreshDataOnScreen(data);
+}
+
+
 const gatherHarmonyData = async (url, pubKey) => {
 	// Returns object of json objects for each endpoint.
 
@@ -70,6 +65,26 @@ const gatherHarmonyData = async (url, pubKey) => {
 	let epochJson = await getStatsFromHarmony(url, null, "hmyv2_getStakingNetworkInfo");
 
 	return { stakingJson, blockJson, epochJson }
+}
+
+
+const getStatsFromHarmony = async (url, pubKey, method_id) => {
+	/* Returns validator stats based on pubKey. */
+
+	let data = setParams(pubKey, method_id);
+
+	// Fetch from endpoints. 
+	const response = await fetch(url, {
+		method: "POST",
+		body: data,
+		headers: {
+			'Content-Type': 'application/json',
+			"Accept": "application/json"
+		}
+	})
+	const json = await response.json();
+
+	return json;
 }
 
 
@@ -92,23 +107,10 @@ const setParams = (pubKey, method) => {
 	}
 
 
-const getStatsFromHarmony = async (url, pubKey, method_id) => {
-	/* Returns validator stats based on pubKey. */
-
-	let data = setParams(pubKey, method_id);
-
-	// Fetch from endpoints. 
-	const response = await fetch(url, {
-		method: "POST",
-		body: data,
-		headers: {
-			'Content-Type': 'application/json',
-			"Accept": "application/json"
-		}
-	})
-	const json = await response.json();
-
-	return json;
+const refreshDataOnScreen = (data) => {
+	refreshStakingStats(data.stakingJson);
+	refreshBlockStats(data.blockJson);
+	refreshEpochStats(data.epochJson);
 }
 
 
