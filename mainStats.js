@@ -1,46 +1,105 @@
-/* Free to use with credit given to thediamondhawk at https://www.888stake.one */
-
-// Binance target for One price. kline_1m, _10m, _30m <-- choose intervals.
-// Full list of intervals in binance API docs. 
-const tickerPriceUrl = 'wss://stream.binance.com:9443/ws/oneusdt@kline_1m';
-
-// Url for Harmony Stats.
-const harmonyApiUrl = "https://api.harmony.one";
+const TICKER_1MIN_URL = "wss://stream.binance.com:9443/ws/oneusdt@kline_1m";
+const HARMONY_API_URL = "https://api.harmony.one";
 
 // Replace this with your wallet address (public key). 
-const pubKey = "one1xa843twfjzkkk8ekj79t7n2ynah6djl0e3ty4x";
+const PUB_KEY = "one1xa843twfjzkkk8ekj79t7n2ynah6djl0e3ty4x";
+const HARMONY_UPDATE_INTERVAL_MS = 10000;
 
-let lastBlockGlobal, thisBlockGlobal;
+let isFirstBlock = true;
+let firstBlockGlobal, currentBlockGlobal, firstBlockReadTimeGlobal;
 
 
 $w.onReady(function () {
-	// Wix style onReady function.
+	getBinanceTicker(TICKER_1MIN_URL);
+
+	firstBlockReadTimeGlobal = Date.now() // Update first session block read time.
 	
-	getOnePrice(tickerPriceUrl);
-	getCurrentStats(harmonyApiUrl, pubKey);
-	getBlockStats(harmonyApiUrl, null);
-	getEpochStats(harmonyApiUrl, null);
-
-	// To select an element by ID use: $w("#elementID")
-
-});
+	updateHarmonyStats();
+	setInterval(updateHarmonyStats, HARMONY_UPDATE_INTERVAL_MS);
+})
 
 
-function getOnePrice(url) {
-/* Grabs One price from Binance.com. */
-	
-	var socket = new WebSocket(url);
+const updateHarmonyStats = async () => {
+	let data = await gatherHarmonyData(HARMONY_API_URL, PUB_KEY);
+	refreshDataOnScreen(data);
+}
 
-	// When message received from web socket then...
-	socket.onmessage = function (event) {
-		let data = JSON.parse(event.data);
-		let openPrice = data.k.o;
-		updateOpenPrice(openPrice);
-	}
+const refreshDataOnScreen = (data) => {
+	refreshStakingStats(data.stakingJson);
+	refreshBlockStats(data.blockJson);
+	refreshEpochStats(data.epochJson);
 }
 
 
-function updateOpenPrice(price){
+const getBinanceTicker = async (url) => {
+	let socket = new WebSocket(url);
+	// Get price every minute
+	setInterval((
+		socket.onmessage = (event) => {
+			try {
+				let data = JSON.parse(event.data);
+				let priceOpen = data.k.o;
+				refreshOpenPrice(priceOpen)
+			} catch {
+				console.log ("Price data skipped. Try again.")
+			}
+
+	}), 60000);	
+}
+
+
+/* Harmony Data */
+const gatherHarmonyData = async (url, pubKey) => {
+	// Returns object of json objects for each endpoint.
+
+	let stakingJson = await getStatsFromHarmony(url, pubKey, "hmy_getValidatorInformation");
+	let blockJson = await getStatsFromHarmony(url, null, "hmyv2_blockNumber");
+	let epochJson = await getStatsFromHarmony(url, null, "hmyv2_getStakingNetworkInfo");
+
+	return { stakingJson, blockJson, epochJson }
+}
+
+
+const setParams = (pubKey, method) => {
+/* Returns object of json params as string. */
+
+	// Sends empty brackets for params if no address required.
+	if (pubKey != null){
+		pubKey = `["${pubKey}"]`
+	} else { pubKey = "[]"}
+	
+	let data = `{
+		"jsonrpc":"2.0",
+		"method":"${method}",
+		"params": ${pubKey},
+		"id": 1}`;
+
+		JSON.stringify(data)
+		return data;
+	}
+
+
+const getStatsFromHarmony = async (url, pubKey, method_id) => {
+	/* Returns validator stats based on pubKey. */
+
+	let data = setParams(pubKey, method_id);
+
+	// Fetch from endpoints. 
+	const response = await fetch(url, {
+		method: "POST",
+		body: data,
+		headers: {
+			'Content-Type': 'application/json',
+			"Accept": "application/json"
+		}
+	})
+	const json = await response.json();
+
+	return json;
+}
+
+
+let refreshOpenPrice = (price) => {
 /* Updates elements on page with price information. */
 	
 	if (price != undefined){
@@ -53,138 +112,87 @@ function updateOpenPrice(price){
 }
 
 
-function setParams(pubKey, method) {
-/* Sets params for basic Harmony API call. */
-	
-	// Sends empty brackets for params if no address required.
-	if (pubKey != null){
-		pubKey = `["${pubKey}"]`
-	} else { pubKey = "[]"}
-	
-	let data = `{
-		"jsonrpc":"2.0",
-    	"method":"${method}",
-    	"params": ${pubKey},
-    	"id": 1}`;
-	
-	JSON.stringify(data)
-	return data;
-}
-
-
-function createRequest(url){
-/* Creates basic XMLHttpRequest for Harmony API. */
-	
-	let xhr = new XMLHttpRequest();
-	
-	xhr.open("POST", url);
-	xhr.setRequestHeader("Content-Type", "application/json");
-	xhr.setRequestHeader("Accept", "application/json");
-	xhr.responseType = "json";
-	
-	return xhr
-}
-
-
-function getCurrentStats(url, pubKey) {
-/* Gets basic validator account stats. */
-
-	let data = setParams(pubKey, "hmy_getValidatorInformation");
-	let xhr = createRequest(url);
-
-	xhr.send(data);
-	xhr.onreadystatechange = function () {
-   		if (xhr.readyState === 4) {
-			let json = xhr.response;
-			updateStats(json);
-   		}
-	};
-}
-
-
-function getBlockStats(url, pubKey) {
-/* Gets block stats. */
-
-	let data = setParams(pubKey, "hmyv2_blockNumber");
-	let xhr = createRequest(url);
-
-	xhr.send(data);
-	xhr.onreadystatechange = function () {
-   		if (xhr.readyState === 4) {
-			let json = xhr.response;
-			thisBlockGlobal = updateBlockStats(json);
-   		}
-	};
-}
-
-
-function getEpochStats(url, pubKey){
-/* Gets block of last epoch, used in calculating epoch time. */
-	
-	let data = setParams(pubKey, "hmyv2_getStakingNetworkInfo");
-	
-	let xhr = createRequest(url);
-
-	xhr.send(data);
-	xhr.onreadystatechange = function () {
-   		if (xhr.readyState === 4) {
-			let json = xhr.response;
-			updateEpochStats(json);
-   		}
-	};
-
-}
-
-
-function updateStats(json){
+let refreshStakingStats = (json) => {
 /* Updates Validator Specific stats. */
+	
+	const STAKINGGOAL = 10000000
 
-	const stakingGoal = 10000000
 	let totalStaked = Number(json.result["total-delegation"]) / 1e18
-	let percentGoal = (totalStaked / stakingGoal) * 100
+	let percentGoal = (totalStaked / STAKINGGOAL) * 100
 
 	// Wix specific update to elements.
 	$w("#totalStaked").text = totalStaked.toLocaleString("en").toString();
-	$w("#stakingGoal").text = stakingGoal.toLocaleString("en").toString();
+	$w("#stakingGoal").text = STAKINGGOAL.toLocaleString("en").toString();
 	$w("#percentStaked").text = percentGoal + "%";
-	$w("#validatorPubKey").text = pubKey;
-
+	$w("#validatorPubKey").text = PUB_KEY;
 }
 
 
-function updateBlockStats(json){
+let refreshBlockStats = (json) => {
 /* Updates block specific stats. */
-	
-	let currentBlock = json.result;
+
+	currentBlockGlobal = json.result;
 	
 	// Wix specific update to elements.
-	$w("#currentBlock").text = currentBlock.toString();
+	$w("#currentBlock").text = currentBlockGlobal.toString();
 
-	return currentBlock;
+	return currentBlockGlobal;
 }
 
 
-function updateEpochStats(json){
+let refreshEpochStats = (json) => {
 /* Updates Epoch Stats. */
 
 	let epochLastBlock = json.result["epoch-last-block"]
-	
-	let time = calculateNextEpochTime(thisBlockGlobal, epochLastBlock);
 
-	$w("#nextEpoch").text = "approx. " + time.toString();
+	let result = calculateNextEpochTime(currentBlockGlobal, epochLastBlock);
+
+	$w("#avgSeconds").text = result.seconds
+	$w("#nextEpoch").text = result.timeEstimate
 }
 
 
-function calculateNextEpochTime(currentBlock, epochLastBlock) {
-	const processingSeconds = 2;
+let calculateNextEpochTime = (currentBlock, epochLastBlock) => {
+	let timeEstimate, seconds;
+
+	let processingSeconds = getAverageBlockTime(Date.now());
 	
 	let blockDelta = epochLastBlock - currentBlock;
 	let totalSeconds = blockDelta * processingSeconds;
 	let hours = totalSeconds / 3600
 	let minutes = totalSeconds % 3600 / 60
-	console.log(totalSeconds)
 
-	let time = Math.floor(hours) + " hours " + Math.floor(minutes) + " minutes"
+	if (!isNaN(minutes)){
+		timeEstimate = Math.floor(hours) + " hours " + Math.floor(minutes) + " minutes (approximate)"
+	} else {
+		timeEstimate = "Calculating...";
+	}
 
-	return time;
+	if (!isFinite(processingSeconds)){
+		seconds = "Calculating..."
+	} else {
+		seconds = processingSeconds.toFixed((2)) + " seconds"
+	}
+
+	return {
+		seconds,
+		timeEstimate
+	}
+}
+
+
+let getAverageBlockTime = (timeOnNewBlock) => {
+/* Calculates average block time in seconds. */
+
+	if (isFirstBlock == true){
+		firstBlockGlobal = currentBlockGlobal;
+		isFirstBlock = false;
+	}
+
+	let elapsedBlocks = currentBlockGlobal - firstBlockGlobal;
+	let elapsedTime = timeOnNewBlock - firstBlockReadTimeGlobal;
+	let averageBlockSeconds = elapsedTime / elapsedBlocks / 1000;
+
+	console.log(averageBlockSeconds)
+	return averageBlockSeconds;
 }
