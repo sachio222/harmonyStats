@@ -4,6 +4,7 @@ const HARMONY_API_URL = "https://api.harmony.one";
 // Replace this with your wallet address (public key). 
 const PUB_KEY = "one1xa843twfjzkkk8ekj79t7n2ynah6djl0e3ty4x";
 const HARMONY_UPDATE_INTERVAL_MS = 10000;
+const BINANCE_UPDATE_INTERVAL_MS = 60000;
 
 let isFirstBlock = true;
 let firstBlockGlobal, currentBlockGlobal, firstBlockReadTimeGlobal;
@@ -33,7 +34,7 @@ const getBinanceTicker = async (url) => {
 				console.log ("Price data skipped. Try again.")
 			}
 
-	}), 60000);	
+	}), BINANCE_UPDATE_INTERVAL_MS);	
 }
 
 
