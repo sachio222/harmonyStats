@@ -30,7 +30,7 @@ const refreshDataOnScreen = (data) => {
 	refreshEpochStats(data.epochJson);
 }
 
-
+/* Binance Ticker Data */
 const getBinanceTicker = async (url) => {
 	let socket = new WebSocket(url);
 	// Get price every minute
@@ -45,6 +45,19 @@ const getBinanceTicker = async (url) => {
 			}
 
 	}), 60000);	
+}
+
+
+let refreshOpenPrice = (price) => {
+/* Updates elements on page with price information. */
+	
+	if (price != undefined){
+		price = new Number(price);
+		price = price.toPrecision(6);
+		
+		$w("#tickerPrice").text = "1 One = $" + price;
+		$w("#subHeader").text = "Harmony One Validation | Current Price: $" + price;
+	}
 }
 
 
@@ -96,19 +109,6 @@ const getStatsFromHarmony = async (url, pubKey, method_id) => {
 	const json = await response.json();
 
 	return json;
-}
-
-
-let refreshOpenPrice = (price) => {
-/* Updates elements on page with price information. */
-	
-	if (price != undefined){
-		price = new Number(price);
-		price = price.toPrecision(6);
-		
-		$w("#tickerPrice").text = "1 One = $" + price;
-		$w("#subHeader").text = "Harmony One Validation | Current Price: $" + price;
-	}
 }
 
 
