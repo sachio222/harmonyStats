@@ -4,7 +4,6 @@ const HARMONY_API_URL = "https://api.harmony.one";
 // Replace this with your wallet address (public key). 
 const PUB_KEY = "one1xa843twfjzkkk8ekj79t7n2ynah6djl0e3ty4x";
 const HARMONY_UPDATE_INTERVAL_MS = 10000;
-const BINANCE_UPDATE_INTERVAL_MS = 60000;
 
 let isFirstBlock = true;
 let firstBlockGlobal, currentBlockGlobal, firstBlockReadTimeGlobal;
@@ -34,7 +33,7 @@ const getBinanceTicker = async (url) => {
 				console.log ("Price data skipped. Try again.")
 			}
 
-	}), BINANCE_UPDATE_INTERVAL_MS);	
+	}), 60000);	
 }
 
 
@@ -121,7 +120,7 @@ let refreshStakingStats = (json) => {
 	const STAKINGGOAL = 10000000
 
 	let totalStaked = Number(json.result["total-delegation"]) / 1e18
-	let percentGoal = (totalStaked / STAKINGGOAL) * 100
+	let percentGoal = ((totalStaked / STAKINGGOAL) * 100).toFixed(2)
 
 	// Wix specific update to elements.
 	$w("#totalStaked").text = totalStaked.toLocaleString("en").toString();
